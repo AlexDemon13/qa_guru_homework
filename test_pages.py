@@ -14,10 +14,10 @@ def driver():
 
 
 def test_selenium_page(driver):
-        url = "https://www.selenium.dev/"
-        driver.get(url)
-        assert driver.title == "Selenium"
-        assert driver.current_url == url
+    url = "https://www.selenium.dev/"
+    driver.get(url)
+    assert driver.title == "Selenium"
+    assert driver.current_url == url
 
 
 def test_github_page(driver):

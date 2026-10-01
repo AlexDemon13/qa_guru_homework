@@ -7,7 +7,6 @@ def greet(name):
 
 
 if __name__ == "__main__":
-        print("Hello, README!")
-        greet("мир")
-        print(add(2, 2))
-с
+    print("Hello, README!")
+    greet("мир")
+    print(add(2, 2))
