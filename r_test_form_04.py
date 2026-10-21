@@ -51,6 +51,7 @@ def test01():
 
         # Проверяем, что в блоке результата появился введенный текст
         assert "Иван Иванов" in result_box.text
+        assert "ivan@example.com" in result_box.text
         assert "Москва, улица Лесная, дом 10" in result_box.text
         assert "Казань, улица Мира, дом 5" in result_box.text
         print("Тест успешно пройден!")
