@@ -1,7 +1,8 @@
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # Первый шаг - выделение каждого теста в отдельную функцию и ее последующий вызов
 
@@ -15,12 +16,13 @@ def test01():
         # 2. Открытие страницы
         driver.get("https://qa-guru.github.io/one-page-form/text-box.html")
         driver.maximize_window()
-        time.sleep(5)  # Пауза, чтобы визуально заметить открытие
+        wait = WebDriverWait(driver, 5)  # Ожидание условий до 5 секунд
 
         # 3. Поиск элементов и заполнение полей
         # Находим поле Full Name по его ID и вводим текст
-        full_name_field = driver.find_element(By.ID, "userName")
-        # web_elements = driver.find_elements(By.XPATH, "someXPath")
+        full_name_field = wait.until(
+            EC.element_to_be_clickable((By.ID, "userName"))
+        )        # web_elements = driver.find_elements(By.XPATH, "someXPath")
 
         full_name_field.send_keys("Иван Иванов")
 
@@ -44,10 +46,10 @@ def test01():
         submit_button.click()
 
         # 4. Проверка результата
-        time.sleep(5)  # Пауза, чтобы увидеть результат отправки
-
-        # Находим блок с отправленными данными
-        result_box = driver.find_element(By.ID, "output")
+        # Ждём видимости блока с отправленными данными
+        result_box = wait.until(
+            EC.visibility_of_element_located((By.ID, "output"))
+        )
 
         # Проверяем, что в блоке результата появился введенный текст
         assert "Иван Иванов" in result_box.text
@@ -71,11 +73,13 @@ def test02():
         # 2. Открытие страницы
         driver.get("https://qa-guru.github.io/one-page-form/text-box.html")
         driver.maximize_window()
-        time.sleep(5)  # Пауза, чтобы визуально заметить открытие
+        wait = WebDriverWait(driver, 5)
 
         # 3. Поиск элементов и заполнение полей
         # Находим поле Full Name по его ID и вводим текст
-        full_name_field = driver.find_element(By.ID, "userName")
+        full_name_field = wait.until(
+            EC.element_to_be_clickable((By.ID, "userName"))
+        )
         # web_elements = driver.find_elements(By.XPATH, "someXPath")
 
         full_name_field.send_keys("Иван Иванов")
@@ -92,15 +96,30 @@ def test02():
         )
         submit_button.click()
 
-        # 4. Проверка результата
-        time.sleep(5)  # Пауза, чтобы увидеть результат отправки
-
         # Находим блок с отправленными данными
         result_box = driver.find_element(By.ID, "output")
 
         # Проверяем, что некорректный email отклонён и результат не показан
         assert email_field.get_property("validity")["typeMismatch"]
         assert not result_box.is_displayed()
+
+        # Исправляем Email без обновления страницы
+        email_field.clear()
+        email_field.send_keys("ivan@example.com")
+        # Повторно отправляем форму
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            submit_button
+        )
+        submit_button.click()
+
+        # Проверяем результат после исправления
+        result_box = wait.until(
+            EC.visibility_of_element_located((By.ID, "output"))
+        )
+        assert "Иван Иванов" in result_box.text
+        assert "ivan@example.com" in result_box.text
+        assert "ivanexample.com" not in result_box.text
         print("Тест успешно пройден!")
 
     finally:

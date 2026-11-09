@@ -25,13 +25,24 @@ class TestLoginForm:
         self.driver.quit()
 
     def field_login(self, login):
-        self.driver.find_element(*self.LOGIN_FIELD).send_keys(login)
+        field = self.wait.until(
+            ec.element_to_be_clickable(self.LOGIN_FIELD)
+        )
+        field.clear()
+        field.send_keys(login)
 
     def field_password(self, password):
-        self.driver.find_element(*self.PASSWORD_FIELD).send_keys(password)
+        field = self.wait.until(
+            ec.element_to_be_clickable(self.PASSWORD_FIELD)
+        )
+        field.clear()
+        field.send_keys(password)
 
     def login_button(self):
-        self.driver.find_element(*self.LOGIN_BUTTON).click()
+        button = self.wait.until(
+            ec.element_to_be_clickable(self.LOGIN_BUTTON)
+        )
+        button.click()
 
     def login(self, login, password):
         self.field_login(login)
@@ -39,15 +50,30 @@ class TestLoginForm:
         self.login_button()
 
     def logout_button(self):
-        self.driver.find_element(*self.LOGOUT_BUTTON).click()
+        button = self.wait.until(
+            ec.element_to_be_clickable(self.LOGOUT_BUTTON)
+        )
+        button.click()
 
     def welcome_message_text(self):
-        self.wait.until(ec.visibility_of_element_located(self.WELCOME_MESSAGE))
-        return self.driver.find_element(*self.WELCOME_MESSAGE).text
+        message = self.wait.until(
+            ec.visibility_of_element_located(self.WELCOME_MESSAGE)
+        )
+        return message.text
 
     def error_message_text(self):
-        self.wait.until(ec.visibility_of_element_located(self.ERROR_MESSAGE))
-        return self.driver.find_element(*self.ERROR_MESSAGE).text
+        message = self.wait.until(
+            ec.visibility_of_element_located(self.ERROR_MESSAGE)
+        )
+        return message.text
+
+    def test_replace_password(self):
+        self.field_password("cat123")
+        self.field_password("dog456")
+
+        password_field = self.driver.find_element(*self.PASSWORD_FIELD)
+
+        assert password_field.get_property("value") == "dog456"
 
     @pytest.mark.parametrize("login, password, expected", [
         ("user1", "password1", f"Welcome, user1!")
