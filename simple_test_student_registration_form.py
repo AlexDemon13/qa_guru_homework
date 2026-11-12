@@ -2,11 +2,7 @@ import time
 import os
 import unittest
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
+from registration_page import RegistrationPage
 
 # python -m unittest simple_test_student_registration_form.py
 
@@ -22,98 +18,66 @@ class TestAutomationForm(unittest.TestCase):
 
         self.driver = webdriver.Chrome()
         self.driver.maximize_window()
-        self.wait = WebDriverWait(self.driver, 5)  # Явное ожидание до 5 секунд
-        self.url = "https://qa-guru.github.io/one-page-form/automation-practice-form.html"
+        self.page = RegistrationPage(self.driver)
+
 
     def test_fill_entire_form(self):
-        driver = self.driver
-        wait = self.wait
-        driver.get(self.url)
+        self.page.open()
 
         # 0. Ожидаем загрузки страницы (проверяем видимость главного заголовка формы)
-        
-        form_title = self.wait.until(EC.visibility_of_element_located((By.XPATH, "/html/body/main/section/h1")))
-        self.assertEqual(form_title.text, "Practice Form")
 
-        form_sub_title = self.wait.until(EC.visibility_of_element_located((By.XPATH, "/html/body/main/section/div/p")))
-        self.assertEqual(form_sub_title.text, "Student Registration Form")
+        self.assertEqual(self.page.get_title(), "Practice Form")
+        self.assertEqual(
+            self.page.get_subtitle(),
+            "Student Registration Form"
+        )
 
         # 1. Убираем окно "Level up your automation" которое как минимум будет закрывать часть web element-ов и мешать с ними работать!
-        # Ожидаем появление заголовка в модальном окне
-        wait.until(EC.visibility_of_element_located((By.XPATH, "//*[contains(text(), 'Level up your automation')]")))
-        # Находим и кликаем по кнопке закрытия (крестику) модального окна
-        close_banner_btn = wait.until(EC.element_to_be_clickable((By.XPATH, """//*[@id="fixedban"]/div/div/button""")))
-        close_banner_btn.click()
-    
-        # Ожидаем, пока баннер полностью исчезнет, чтобы он не перекрывал элементы формы
-        wait.until(EC.invisibility_of_element(close_banner_btn))
 
+        # Ожидаем, пока баннер полностью исчезнет, чтобы он не перекрывал элементы формы
+        self.page.close_banner()
         # 2. Текстовые поля: Имя и Фамилия
-        first_name = self.wait.until(EC.element_to_be_clickable((By.ID, "firstName")))
-        first_name.send_keys("Иван")
-        
-        last_name = driver.find_element(By.ID, "lastName")
-        last_name.send_keys("Петров")
+        self.page.fill_first_name("Иван")
+
+        self.page.fill_last_name("Петров")
 
         # 3. Текстовое поле: Email
-        email = driver.find_element(By.ID, "userEmail")
-        email.send_keys("ivan.petrov@example.com")
+        self.page.fill_email("ivan.petrov@example.com")
 
         # 4. Радиокнопки (Gender): кликаем по связанному тегу <label>, так как сам <input> скрыт
-        gender_male_label = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "label[for='gender-radio-1']")))
-        gender_male_label.click()
+        self.page.select_male()
 
-        gender_male = driver.find_element(By.ID, "gender-radio-1")
-        self.assertTrue(gender_male.is_selected())
+        self.assertTrue(self.page.is_male_selected())
 
         # 5. Текстовое поле: Номер телефона (Mobile)
-        mobile_number = driver.find_element(By.ID, "userNumber")
-        mobile_number.send_keys("9991234567")
+        self.page.fill_mobile("9991234567")
 
         # 6. Виджет календаря (Date of Birth)
-        date_input = driver.find_element(By.ID, "dateOfBirthInput")
-        date_input.click()
-
-        # Ожидаем появление всплывающего окна календаря
-        self.wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "react-datepicker__month-container")))
+        self.page.open_calendar()
 
         # Выбираем месяц (декабрь) через выпадающий список внутри календаря
-        month_select = self.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "react-datepicker__month-select")))
-        Select(month_select).select_by_value("11")
+        self.page.select_birth_month("11")
 
         # Выбираем год (1995)
-        year_select = driver.find_element(By.CLASS_NAME, "react-datepicker__year-select")
-        Select(year_select).select_by_value("1995")
+        self.page.select_birth_year("1995")
 
         # Выбираем конкретный день месяца (например, 25-е число)
         # Используем специальный класс react-datepicker__day--025, исключая дни соседних месяцев (outside-month)
-        day_element = driver.find_element(By.CSS_SELECTOR, ".react-datepicker__day--025:not(.react-datepicker__day--outside-month)")
-        day_element.click()
-
+        self.page.select_birth_day("025")
         self.assertEqual(
-            date_input.get_property("value"),
+            self.page.get_birth_date(),
             "25 Dec 1995"
         )
-
         # 7. Поле автодополнения (Subjects)
-        subjects_input = self.wait.until(EC.element_to_be_clickable((By.ID, "subjectsInput")))
-        subjects_input.send_keys("Computer Science")
-        subjects_input.send_keys(Keys.ENTER)
+        self.page.select_subject("Computer Science")
 
         # 8. Чекбоксы (Hobbies): кликаем по связанному <label>
-        hobby_sports = self.wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "label[for='hobbies-checkbox-1']"))
-        )
-        hobby_sports.click()
-        
-        hobby_music = driver.find_element(By.CSS_SELECTOR, "label[for='hobbies-checkbox-3']")
-        hobby_music.click()
+        self.page.select_sports()
 
-        sports = driver.find_element(By.ID, "hobbies-checkbox-1")
-        music = driver.find_element(By.ID, "hobbies-checkbox-3")
+        self.page.select_music()
 
-        self.assertTrue(sports.is_selected())
-        self.assertTrue(music.is_selected())
+        self.assertTrue(self.page.is_sports_selected())
+        self.assertTrue(self.page.is_music_selected())
 
         # 9. Загрузка файла (Picture)
         # Создаем временный файл для теста, чтобы код оставался переносимым
@@ -121,97 +85,72 @@ class TestAutomationForm(unittest.TestCase):
         with open(temp_file_path, "w") as f:
             f.write("fake image data")
 
-        upload_input = driver.find_element(By.ID, "uploadPicture")
-        upload_input.send_keys(temp_file_path)
+        self.page.upload_picture(temp_file_path)
 
         # 10. Текстовая область: Текущий адрес (Current Address)
-        current_address = driver.find_element(By.ID, "currentAddress")
-        current_address.send_keys("123456, г. Москва, ул. Ленина, д. 1")
+        self.page.fill_current_address("123456, г. Москва, ул. Ленина, д. 1")
 
         # Избавляемся от футеров или рекламы, которые могут перекрывать кастомные дропдауны, делаем скрол (главное, демонстрация execute_script)
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        self.page.scroll_to_bottom()
         #driver.execute_script("document.getElementsByTagName('footer')[0].style.display='none';")
         #driver.execute_script("document.getElementById('fixedban').style.display='none';")
 
         # 11. Выпадающий список (Dropdown): Выбор Штата (State)
-        state_dropdown = self.wait.until(EC.element_to_be_clickable((By.ID, "state")))
-        state_dropdown.click()
-        # Ждем появления опции во всплывающем меню дропдауна React-Select и кликаем
-        state_option = self.wait.until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "//div[@id='stateCity-wrapper']/div[normalize-space(.)='NCR']")
-            )
-        )
-        state_option.click()
+        self.page.select_state("NCR")
         
 
         # 12. Выпадающий список (Dropdown): Выбор Города (City)
-        city_dropdown = self.wait.until(EC.element_to_be_clickable((By.ID, "city")))
-        city_dropdown.click()
-        city_option = self.wait.until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "//div[@id='stateCity-wrapper']/div[normalize-space(.)='Delhi']")
-            )
-        )
-        city_option.click()
+        self.page.select_city("Delhi")
 
         # 13. Отправка формы (Submit)
-        submit_button = self.wait.until(
-            EC.element_to_be_clickable((By.ID, "submit"))
-        )
-        submit_button.click()
+        self.page.submit()
 
         # 14. Проверка результатов (Expected Conditions для модального окна)
         # Проверяем, что появилось финальное окно с подтверждением
-        modal_title = self.wait.until(
-            EC.visibility_of_element_located((By.ID, "example-modal-sizes-title-lg"))
-        )
-        self.assertEqual(modal_title.text, "Thanks for submitting the form")
+        modal_title = self.page.get_result_title()
+        self.assertEqual(modal_title, "Thanks for submitting the form")
 
         # Проверяем наличие валидных данных в таблице результатов
-        result_table = self.wait.until(
-            EC.visibility_of_element_located((By.CLASS_NAME, "table-responsive"))
-        )
-        self.assertIn("Иван Петров", result_table.text)
-        self.assertIn("ivan.petrov@example.com", result_table.text)
-        self.assertIn("Male", result_table.text)
-        self.assertIn("9991234567", result_table.text)
-        self.assertIn("25 Dec 1995", result_table.text) # форма вывода даты может меняться от настроек
-        self.assertIn("Computer Science", result_table.text)
-        self.assertIn("Sports, Music", result_table.text)
-        self.assertIn("test_image.jpg", result_table.text)
-        self.assertIn("123456, г. Москва, ул. Ленина, д. 1", result_table.text)
-        self.assertIn("NCR Delhi", result_table.text)
+        result_text = self.page.get_result_text()
+
+        self.assertIn("Иван Петров", result_text)
+        self.assertIn("ivan.petrov@example.com", result_text)
+        self.assertIn("Male", result_text)
+        self.assertIn("9991234567", result_text)
+        self.assertIn("25 Dec 1995", result_text) # форма вывода даты может меняться от настроек
+        self.assertIn("Computer Science", result_text)
+        self.assertIn("Sports, Music", result_text)
+        self.assertIn("test_image.jpg", result_text)
+        self.assertIn("123456, г. Москва, ул. Ленина, д. 1", result_text)
+        self.assertIn("NCR Delhi", result_text)
 
     def test_empty_form(self):
-        driver = self.driver
-        wait = self.wait
-        driver.get(self.url)
 
-        close_banner_btn = wait.until(
-            EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, "#fixedban button")
-            )
-        )
-        close_banner_btn.click()
-        wait.until(EC.invisibility_of_element(close_banner_btn))
+        self.page.open()
+        self.page.close_banner()
 
-        submit_button = wait.until(
-            EC.element_to_be_clickable((By.ID, "submit"))
-        )
-        driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center'});",
-            submit_button
-        )
-        submit_button.click()
+        self.page.submit()
 
-        error_message = wait.until(
-            EC.visibility_of_element_located((By.ID, "formError"))
-        )
+        error_message = self.page.get_error_message()
         self.assertEqual(
-            error_message.text,
+            error_message,
             "Please fill required fields and enter a valid 10-digit mobile number."
         )
+
+    def test_short_mobile(self):
+            self.page.open()
+            self.page.close_banner()
+            self.page.fill_first_name("Иван")
+            self.page.fill_last_name("Петров")
+            self.page.select_male()
+            self.page.fill_mobile("12345")
+            self.page.submit()
+
+            error_message = self.page.get_error_message()
+            self.assertEqual(
+                error_message,
+                "Please fill required fields and enter a valid 10-digit mobile number."
+            )
 
     def tearDown(self):
         # Удаляем созданный временный файл, если он существует
